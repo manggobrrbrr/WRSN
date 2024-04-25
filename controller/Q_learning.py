@@ -88,46 +88,11 @@ class Q_learning:
         
         return energy_factor, priority_factor, target_monitoring_factor  
 
-    def charge_time(self, charging_location, remaining_charging_times):   
-        Eth =  0
-        theta = 1 
-        Emax =  1
+def charge_time(self, mc, Sj):   
 
-        Es = Eth + theta * Emax
-
-    # Calculate charging time for each sensor at each charging location
-        optimal_charging_times = []
-        for sensor_index, _ in enumerate(self.action_list):
-            sensor_location = self.action_list[sensor_index]
-
-        # Calculate per-second energy provided by the charging location
-            distance_to_charging_location = euclidean(sensor_location, self.mc.net.listNodes[charging_location].location)
-            pc_jk = lambda d: self.mc.alpha / (distance_to_charging_location + self.mc.beta)**2
-            tmove = distance_to_charging_location/self.mc.velocity
-
-        # Calculate current energy consumption rate 
-            ej = self.mc.consumption_rate
-
-        # Calculate energy current in sensor Sj
-            Ej_now = self.mc.energy
-
-        # Calculate remaining charging time from other charging locations
-            remaining_charging_time_from_other_locations = [min(tc) for tc in remaining_charging_times]
-
-        # Calculate the safe charging time
-            charging_time = (Es - (self.mc.net.listNodes[charging_location].energy) - sum([pc_jk * min(tc) for tc in remaining_charging_time_from_other_locations]) - (tmove * ej))/(sum([pckj for pckj in pck]) + pij - ej)
-            optimal_charging_times.append(charging_time)
-
-    # Sort the optimal charging times in descending order
-        optimal_charging_times.sort(reverse=True)
-
-        return optimal_charging_times
-    
-def charge_time(self, charging_location):   
-
-    Eth = 0
-    theta = 1 
-    Emax = 1
+    Eth = 1
+    theta = 1  
+    Emax = Sj.capacity
 
     Es = Eth + theta * Emax
 
@@ -137,17 +102,18 @@ def charge_time(self, charging_location):
         sensor_location = self.action_list[sensor_index]
 
         # Calculate per-second energy provided by the charging location
-        distance_to_charging_location = euclidean(sensor_location, self.mc.net.listNodes[charging_location].location)
-        pc_jk = lambda d: self.mc.alpha / (distance_to_charging_location + self.mc.beta)**2
-        tmove = distance_to_charging_location / self.mc.velocity
+        distance_to_charging_location = euclidean(sensor_location, Sj.location)
+        pc_jj = lambda d: self.mc.alpha / (distance_to_charging_location + mc.beta)**2
+        tmove = distance_to_charging_location / mc.velocity
+        pc_jk = mc.pc_jk(mc.location)
+        # Calculate current energy consumption rate and cur_energy
+        ej = mc.consumption_rate
+        Ej_now = Sj.energy
 
-        # Calculate current energy consumption rate 
-        ej = self.mc.consumption_rate
-        Ej_now = self.mc.energy
+        # Calculate remaining charging time
+        tcu = mc.get_remaining_charging_time()
 
-        # Calculate the safe charging time
-        tcu = (Es - Ej_now) / (ej + pc_jk(distance_to_charging_location)) - tmove
-        charging_time = ((Es - Ej_now - ej*tcu) - (tmove * ej)) / (pc_jk(distance_to_charging_location) + self.mc.consumption_rate)
+        charging_time = ((Es - Ej_now - ej*tcu) - (tmove * ej)) / (sum((pc_jk) + pc_jj - ej))
         optimal_charging_times.append(charging_time)
 
     # Sort the optimal charging times in descending order

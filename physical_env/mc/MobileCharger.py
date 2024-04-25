@@ -1,10 +1,11 @@
 import numpy as np
 from scipy.spatial.distance import euclidean
 import copy
+import time
 from controller.Q_learning import Q_learning
 
 class MobileCharger:
-    def __init__(self, location, mc_phy_spe):
+    def __init__(self, location, mc_phy_spe, max_charging_time):
         """
         The initialization for a MC.
         :param env: the time management system of this MC
@@ -32,6 +33,10 @@ class MobileCharger:
         self.connected_nodes = []
         self.incentive = 0
         self.q_learning = Q_learning(mc=self)
+
+        self.max_charging_time = max_charging_time
+        self.start_charging_time = None 
+        self.remaining_charging_time = max_charging_time
     def charge_step(self, t):
         """
         The charging process to nodes in 'nodes' within simulateTime
@@ -48,6 +53,18 @@ class MobileCharger:
             node.charger_disconnection(self)
         self.chargingRate = 0
         return
+    
+    def start_charging(self):
+        self.start_charging_time = time.time()
+
+    def stop_charging(self):
+        end_charging_time = time.time()
+        elapsed_time = end_charging_time - self.start_charging_time
+        self.remaining_charging_time -= elapsed_time
+        self.start_charging_time = None
+
+    def get_remaining_charging_time(self):
+        return self.remaining_charging_time
 
     def charge(self, chargingTime):
         tmp = chargingTime
@@ -137,3 +154,6 @@ class MobileCharger:
         if self.energy <= self.threshold:
             self.status = 0
             self.energy = self.threshold
+    
+    def pc_jk(self, distance):
+        return self.alpha / (distance + self.beta)**2
