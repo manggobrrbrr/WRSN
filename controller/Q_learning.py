@@ -95,9 +95,7 @@ def charge_time(self, mc, Sj):
     optimal_charging_times = []
     for sensor_index, _ in enumerate(Sj.location):
         sensor_location = self.node[sensor_index]
-
-        distance_to_charging_location = sqrt(sum((a - b) ** 2 for a, b in zip(sensor_location, Sj.location)))
-
+        
         positive_sensors = [node for node in self.mc.net.listNodes if node.energy < Es and node.energyCS - node.energyRR < 0]
         negative_sensors = [node for node in self.mc.net.listNodes if node.energy > Es and node.energyCS - node.energyRR > 0]
 
