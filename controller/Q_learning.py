@@ -87,36 +87,54 @@ class Q_learning:
         target_monitoring_factor = t
         
         return energy_factor, priority_factor, target_monitoring_factor  
-
+    
 def charge_time(self, mc, Sj):   
-
-    Eth = 1
-    theta = 1  
-    Emax = Sj.capacity
-
-    Es = Eth + theta * Emax
+    Es = self.mc.net.listNodes[0].threshold + self.mc.theta*self.mc.net.listNodes[0].capacity
 
     # Calculate charging time for each sensor at the charging location
     optimal_charging_times = []
-    for sensor_index, _ in enumerate(self.action_list):
-        sensor_location = self.action_list[sensor_index]
+    for sensor_index, _ in enumerate(Sj.location):
+        sensor_location = self.node[sensor_index]
 
-        # Calculate per-second energy provided by the charging location
-        distance_to_charging_location = euclidean(sensor_location, Sj.location)
-        pc_jj = lambda d: self.mc.alpha / (distance_to_charging_location + mc.beta)**2
-        tmove = distance_to_charging_location / mc.velocity
-        pc_jk = mc.pc_jk(mc.location)
-        # Calculate current energy consumption rate and cur_energy
-        ej = mc.consumption_rate
-        Ej_now = Sj.energy
+        distance_to_charging_location = sqrt(sum((a - b) ** 2 for a, b in zip(sensor_location, Sj.location)))
 
-        # Calculate remaining charging time
-        tcu = mc.get_remaining_charging_time()
+        positive_sensors = [node for node in self.mc.net.listNodes if node.energy < Es and node.energyCS - node.energyRR < 0]
+        negative_sensors = [node for node in self.mc.net.listNodes if node.energy > Es and node.energyCS - node.energyRR > 0]
 
-        charging_time = ((Es - Ej_now - ej*tcu) - (tmove * ej)) / (sum((pc_jk) + pc_jj - ej))
-        optimal_charging_times.append(charging_time)
+        ta = []
+        for node in positive_sensors:
+            tmove = euclidean(self.mc.current, self.action_list[self.location]) / self.mc.velocity
+            ej = node.energy
+            if self.mc.cur_action_type == 'moving':
+                ej = max (node.thresshold, ej - tmove*(node.energyCS + node.energyRR))
+            charging_rate = self.mc.alpha / (euclidean(self.mc.cur_phy_action[0:2], node.location)+ self.mc.beta)
+            ta.append((Es - ej) / charging_rate)
 
-    # Sort the optimal charging times in descending order
-    optimal_charging_times.sort(reverse=True)
+        tb = []
+        for node in negative_sensors:
+            tmove = euclidean(self.mc.current, self.action_list[self.location]) / self.mc.velocity
+            ej = node.energy
+            if self.mc.cur_action_type == 'moving':
+                ej = min (node.thresshold, ej - tmove*(node.energyCS + node.energyRR))
+            charging_rate = self.mc.alpha / (euclidean(self.mc.cur_phy_action[0:2], node.location)+ self.mc.beta)
+            tb.append((Es - ej) / charging_rate)
+
+        tc = sorted(ta + tb, reverse=True)
+    
+        def brute_force_search(tc):
+            ot = None
+            optimal_energy = -9999
+
+            for charging_time in tc:
+                energy_factor = charging_time
+        
+                if energy_factor > optimal_energy_factor:
+                    optimal_energy_factor = energy_factor
+                    ot = charging_time
+
+            return ot
+
+        t_optimal = brute_force_search(tc)
+        optimal_charging_times.append(t_optimal)
 
     return optimal_charging_times
